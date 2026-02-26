@@ -2,7 +2,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ServiceHub.Core\ServiceHub.Core.csproj" />
-    <ProjectReference Include="..\ServiceHub.Infrastructure\ServiceHub.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ServicesImplementation\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.1" />
   </ItemGroup>
 
   <PropertyGroup>
