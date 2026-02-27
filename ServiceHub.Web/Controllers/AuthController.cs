@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -42,24 +43,59 @@ public class AuthController : ControllerBase
     {
         var user = await _userManager.FindByEmailAsync(email);
 
-        if (user == null ||
-            !await _userManager.CheckPasswordAsync(user, password))
-            return Unauthorized();
+        if (user == null)
+            return Unauthorized("Usuário inválido");
 
-        var token = GenerateJwtToken(user);
+        var result = await _userManager.CheckPasswordAsync(user, password);
+
+        if (!result)
+            return Unauthorized("Senha inválida");
+
+        var userRoles = await _userManager.GetRolesAsync(user);
+
+        var claims = new List<Claim>
+    {
+        new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
+
+        foreach (var role in userRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
+        var token = GenerateJwtToken(claims);
 
         return Ok(new { token });
     }
 
-    private string GenerateJwtToken(IdentityUser user)
+
+    [HttpPost("add-role")]
+    public async Task<IActionResult> AddRole(string email, string role)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user == null)
+            return NotFound("Usuário não encontrado");
+
+        var result = await _userManager.AddToRoleAsync(user, role);
+
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return Ok($"Role {role} adicionada ao usuário");
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("teste-admin")]
+    public IActionResult TesteAdmin()
+    {
+        return Ok("Você é admin 😎");
+    }
+
+    private string GenerateJwtToken(IEnumerable<Claim> claims)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]));
@@ -77,5 +113,6 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+      
 }
 

@@ -1,31 +1,53 @@
-﻿using Microsoft.EntityFrameworkCore;
-using ServiceHub.Infrastructure.Data;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using ServiceHub.Infrastructure.Data;
+using ServiceHub.Infrastructure.Identity;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 
-// Controllers (API)
 builder.Services.AddControllers();
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Digite: Bearer {seu token}",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
 
-// DbContext
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// JWT
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -48,21 +70,29 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
-// Swagger (abre na raiz)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "ServiceHub API V1");
-    c.RoutePrefix = string.Empty; // 👈 Swagger vira página inicial
+    c.RoutePrefix = string.Empty;
 });
 
 app.UseHttpsRedirection();
-
 app.UseRouting();
 
-app.UseAuthentication(); // 👈 SEMPRE antes do Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers(); // 👈 Remove o MapControllerRoute
+app.MapControllers();
+
+
+// 🔥 SEED DE ROLES
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider
+        .GetRequiredService<RoleManager<IdentityRole>>();
+
+    await RoleSeeder.SeedRolesAsync(roleManager);
+}
 
 app.Run();
