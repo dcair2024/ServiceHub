@@ -94,5 +94,11 @@ using (var scope = app.Services.CreateScope())
 
     await RoleSeeder.SeedRolesAsync(roleManager);
 }
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider
+        .GetRequiredService<RoleManager<IdentityRole>>();
 
+    await RoleSeeder.SeedRolesAsync(roleManager);
+}
 app.Run();

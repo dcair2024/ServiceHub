@@ -6,13 +6,30 @@ public static class RoleSeeder
 {
     public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
     {
-        string[] roles = { "Admin", "Operador" };
+        if (roleManager == null)
+            throw new ArgumentNullException(nameof(roleManager));
 
-        foreach (var role in roles)
+        var roles = new List<string>
         {
-            if (!await roleManager.RoleExistsAsync(role))
+            "Admin",
+            "Operador"
+        };
+
+        foreach (var roleName in roles)
+        {
+            var roleExists = await roleManager.RoleExistsAsync(roleName);
+
+            if (!roleExists)
             {
-                await roleManager.CreateAsync(new IdentityRole(role));
+                var result = await roleManager.CreateAsync(new IdentityRole(roleName));
+
+                if (!result.Succeeded)
+                {
+                    throw new Exception(
+                        $"Erro ao criar role '{roleName}': " +
+                        string.Join(", ", result.Errors.Select(e => e.Description))
+                    );
+                }
             }
         }
     }

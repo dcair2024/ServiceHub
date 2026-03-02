@@ -90,7 +90,7 @@ public class AuthController : ControllerBase
     [HttpGet("teste-admin")]
     public IActionResult TesteAdmin()
     {
-        return Ok("Você é admin 😎");
+        return Ok("Admin validado com sucesso 🔥");
     }
 
     private string GenerateJwtToken(IEnumerable<Claim> claims)
