@@ -42,7 +42,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -78,7 +79,6 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
-app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -86,7 +86,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 
-// 🔥 SEED DE ROLES
+// 🔥 Seed de Roles (uma única vez)
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider
@@ -94,11 +94,5 @@ using (var scope = app.Services.CreateScope())
 
     await RoleSeeder.SeedRolesAsync(roleManager);
 }
-using (var scope = app.Services.CreateScope())
-{
-    var roleManager = scope.ServiceProvider
-        .GetRequiredService<RoleManager<IdentityRole>>();
 
-    await RoleSeeder.SeedRolesAsync(roleManager);
-}
 app.Run();

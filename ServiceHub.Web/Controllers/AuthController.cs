@@ -21,6 +21,7 @@ public class AuthController : ControllerBase
         _configuration = configuration;
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(string email, string password)
     {
@@ -38,6 +39,7 @@ public class AuthController : ControllerBase
         return Ok("Usuário criado com sucesso");
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(string email, string password)
     {
@@ -46,18 +48,18 @@ public class AuthController : ControllerBase
         if (user == null)
             return Unauthorized("Usuário inválido");
 
-        var result = await _userManager.CheckPasswordAsync(user, password);
+        var passwordValid = await _userManager.CheckPasswordAsync(user, password);
 
-        if (!result)
+        if (!passwordValid)
             return Unauthorized("Senha inválida");
 
         var userRoles = await _userManager.GetRolesAsync(user);
 
         var claims = new List<Claim>
-    {
-        new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-    };
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
 
         foreach (var role in userRoles)
         {
@@ -69,7 +71,7 @@ public class AuthController : ControllerBase
         return Ok(new { token });
     }
 
-
+    [Authorize(Roles = "Admin")]
     [HttpPost("add-role")]
     public async Task<IActionResult> AddRole(string email, string role)
     {
@@ -113,6 +115,5 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-      
 }
 
