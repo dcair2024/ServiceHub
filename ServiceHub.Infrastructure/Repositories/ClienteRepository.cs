@@ -5,7 +5,6 @@ using ServiceHub.Infrastructure.Data;
 
 namespace ServiceHub.Infrastructure.Repositories;
 
-// O "public" resolve o erro de nível de proteção
 public class ClienteRepository : IClienteRepository
 {
     private readonly ApplicationDbContext _context;
@@ -15,25 +14,14 @@ public class ClienteRepository : IClienteRepository
         _context = context;
     }
 
-    public async Task<Cliente?> ObterPorIdAsync(int id)
-    {
-        return await _context.Set<Cliente>().FindAsync(id);
-    }
+    public async Task<Cliente?> ObterPorIdAsync(int id) =>
+        await _context.Set<Cliente>().FindAsync(id);
 
-    public async Task<Cliente?> ObterPorEmailAsync(string email)
-    {
-        // Necessário para a regra de e-mail único
-        return await _context.Set<Cliente>()
-            .FirstOrDefaultAsync(c => c.Email == email);
-    }
+    public async Task<Cliente?> ObterPorEmailAsync(string email) =>
+        await _context.Set<Cliente>().FirstOrDefaultAsync(c => c.Email == email);
 
-    public async Task<IEnumerable<Cliente>> ObterTodosAtivosAsync()
-    {
-        // Necessário para a regra de listagem de ativos
-        return await _context.Set<Cliente>()
-            .Where(c => c.Ativo)
-            .ToListAsync();
-    }
+    public async Task<IEnumerable<Cliente>> ObterTodosAtivosAsync() =>
+        await _context.Set<Cliente>().Where(c => c.Ativo).ToListAsync();
 
     public async Task<Cliente> AdicionarAsync(Cliente cliente)
     {

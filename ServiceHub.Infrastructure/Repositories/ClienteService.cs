@@ -5,46 +5,35 @@ namespace ServiceHub.Infrastructure.Services;
 
 public class ClienteService : IClienteService
 {
-    private readonly IClienteRepository _clienteRepository;
+    private readonly IClienteRepository _repository;
 
-    public ClienteService(IClienteRepository clienteRepository)
-    {
-        _clienteRepository = clienteRepository;
-    }
+    public ClienteService(IClienteRepository repository) => _repository = repository;
 
     public async Task<Cliente> CriarClienteAsync(string nome, string email)
     {
-        // REGRA DE NEGÓCIO: E-mail Único
-        var existente = await _clienteRepository.ObterPorEmailAsync(email);
-        if (existente != null)
-        {
-            throw new Exception("Regra de Negócio: Já existe um cliente cadastrado com este e-mail.");
-        }
+        if (await _repository.ObterPorEmailAsync(email) != null)
+            throw new Exception("E-mail já cadastrado.");
 
-        var novoCliente = new Cliente(nome, email);
-        return await _clienteRepository.AdicionarAsync(novoCliente);
+        var cliente = new Cliente(nome, email);
+        return await _repository.AdicionarAsync(cliente);
     }
 
     public async Task DesativarClienteAsync(int id)
     {
-        var cliente = await _clienteRepository.ObterPorIdAsync(id);
+        var cliente = await _repository.ObterPorIdAsync(id);
         if (cliente == null) throw new Exception("Cliente não encontrado.");
-
         cliente.Desativar();
-        await _clienteRepository.AtualizarAsync(cliente);
+        await _repository.AtualizarAsync(cliente);
     }
 
     public async Task AtivarClienteAsync(int id)
     {
-        var cliente = await _clienteRepository.ObterPorIdAsync(id);
+        var cliente = await _repository.ObterPorIdAsync(id);
         if (cliente == null) throw new Exception("Cliente não encontrado.");
-
         cliente.Ativar();
-        await _clienteRepository.AtualizarAsync(cliente);
+        await _repository.AtualizarAsync(cliente);
     }
 
-    public async Task<IEnumerable<Cliente>> ObterTodosAtivosAsync()
-    {
-        return await _clienteRepository.ObterTodosAtivosAsync();
-    }
+    public async Task<IEnumerable<Cliente>> ObterTodosAtivosAsync() =>
+        await _repository.ObterTodosAtivosAsync();
 }

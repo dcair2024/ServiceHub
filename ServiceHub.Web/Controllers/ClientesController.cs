@@ -1,50 +1,47 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ServiceHub.Core.Interfaces;
-using ServiceHub.Core.Entities;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // Exige estar logado
+[Authorize] // Exige Token JWT
 public class ClientesController : ControllerBase
 {
-    private readonly IClienteService _clienteService;
+    private readonly IClienteService _service;
 
-    public ClientesController(IClienteService clienteService)
-    {
-        _clienteService = clienteService;
-    }
+    public ClientesController(IClienteService service) => _service = service;
 
-    // REGRA: E-mail único é validado dentro do CriarClienteAsync
     [HttpPost]
-    public async Task<IActionResult> Criar([FromBody] ClienteInputModel model)
+    public async Task<IActionResult> Criar([FromBody] ClienteRequest request)
     {
         try
         {
-            var cliente = await _clienteService.CriarClienteAsync(model.Nome, model.Email);
+            var cliente = await _service.CriarClienteAsync(request.Nome, request.Email);
             return Ok(cliente);
         }
         catch (Exception ex)
         {
-            // Retorna o erro de e-mail duplicado ou regra de negócio
             return BadRequest(ex.Message);
         }
     }
 
+    [HttpGet("ativos")]
+    public async Task<IActionResult> ListarAtivos() => Ok(await _service.ObterTodosAtivosAsync());
+
     [HttpPatch("{id}/desativar")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")] // Apenas Admins desativam
     public async Task<IActionResult> Desativar(int id)
     {
-        await _clienteService.DesativarClienteAsync(id);
-        return Ok("Cliente desativado com sucesso.");
-    }
-
-    [HttpGet("ativos")]
-    public async Task<IActionResult> ObterAtivos()
-    {
-        var ativos = await _clienteService.ObterTodosAtivosAsync();
-        return Ok(ativos);
+        try
+        {
+            await _service.DesativarClienteAsync(id);
+            return Ok("Cliente desativado.");
+        }
+        catch (Exception ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 }
 
-public record ClienteInputModel(string Nome, string Email);
+public record ClienteRequest(string Nome, string Email);
