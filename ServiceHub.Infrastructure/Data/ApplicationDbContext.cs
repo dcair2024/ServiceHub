@@ -12,5 +12,15 @@ namespace ServiceHub.Infrastructure.Data
         }
 
         public DbSet<Cliente> Clientes { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        }
     }
-}
+
+    
+
+
+    }

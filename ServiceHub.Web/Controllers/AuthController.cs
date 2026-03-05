@@ -11,20 +11,28 @@ using System.Text;
 public class AuthController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
 
     public AuthController(
         UserManager<IdentityUser> userManager,
+        RoleManager<IdentityRole> roleManager,
         IConfiguration configuration)
     {
         _userManager = userManager;
+        _roleManager = roleManager;
         _configuration = configuration;
     }
 
+    // ================= REGISTER =================
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(string email, string password)
     {
+        var userExists = await _userManager.FindByEmailAsync(email);
+        if (userExists != null)
+            return BadRequest("Usuário já existe");
+
         var user = new IdentityUser
         {
             UserName = email,
@@ -36,9 +44,10 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        return Ok("Usuário criado com sucesso");
+        return Ok("Usuário criado com sucesso (sem role)");
     }
 
+    // ================= LOGIN =================
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(string email, string password)
@@ -71,6 +80,7 @@ public class AuthController : ControllerBase
         return Ok(new { token });
     }
 
+    // ================= ADD ROLE =================
     [Authorize(Roles = "Admin")]
     [HttpPost("add-role")]
     public async Task<IActionResult> AddRole(string email, string role)
@@ -80,14 +90,18 @@ public class AuthController : ControllerBase
         if (user == null)
             return NotFound("Usuário não encontrado");
 
+        if (!await _roleManager.RoleExistsAsync(role))
+            return BadRequest("Role não existe");
+
         var result = await _userManager.AddToRoleAsync(user, role);
 
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        return Ok($"Role {role} adicionada ao usuário");
+        return Ok($"Role {role} adicionada com sucesso 🔥");
     }
 
+    // ================= TESTE ADMIN =================
     [Authorize(Roles = "Admin")]
     [HttpGet("teste-admin")]
     public IActionResult TesteAdmin()
@@ -116,4 +130,3 @@ public class AuthController : ControllerBase
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
-
