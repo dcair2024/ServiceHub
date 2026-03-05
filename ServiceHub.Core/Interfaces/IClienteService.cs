@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ServiceHub.Core.Entities;
 
-namespace ServiceHub.Core.Interfaces
+namespace ServiceHub.Core.Interfaces;
+
+public interface IClienteService
 {
-    internal class IClienteService
-    {
-    }
+    Task<Cliente> CriarClienteAsync(string nome, string email);
+    Task DesativarClienteAsync(int id);
+    Task AtivarClienteAsync(int id);
+    Task<IEnumerable<Cliente>> ObterTodosAtivosAsync();
 }

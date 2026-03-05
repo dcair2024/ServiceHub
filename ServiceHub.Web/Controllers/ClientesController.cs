@@ -1,38 +1,50 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ServiceHub.Core.Interfaces;
 using ServiceHub.Core.Entities;
-using ServiceHub.Infrastructure.Data;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // exige autenticação
+[Authorize] // Exige estar logado
 public class ClientesController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IClienteService _clienteService;
 
-    public ClientesController(ApplicationDbContext context)
+    public ClientesController(IClienteService clienteService)
     {
-        _context = context;
+        _clienteService = clienteService;
     }
 
-    // Admin e Operador podem listar
-    [Authorize(Roles = "Admin,Operador")]
-    [HttpGet]
-    public async Task<IActionResult> Get()
-    {
-        var clientes = await _context.Clientes.ToListAsync();
-        return Ok(clientes);
-    }
-
-    // Apenas Admin pode criar
-    [Authorize(Roles = "Admin")]
+    // REGRA: E-mail único é validado dentro do CriarClienteAsync
     [HttpPost]
-    public async Task<IActionResult> Create(Cliente cliente)
+    public async Task<IActionResult> Criar([FromBody] ClienteInputModel model)
     {
-        _context.Clientes.Add(cliente);
-        await _context.SaveChangesAsync();
+        try
+        {
+            var cliente = await _clienteService.CriarClienteAsync(model.Nome, model.Email);
+            return Ok(cliente);
+        }
+        catch (Exception ex)
+        {
+            // Retorna o erro de e-mail duplicado ou regra de negócio
+            return BadRequest(ex.Message);
+        }
+    }
 
-        return CreatedAtAction(nameof(Get), new { id = cliente.Id }, cliente);
+    [HttpPatch("{id}/desativar")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Desativar(int id)
+    {
+        await _clienteService.DesativarClienteAsync(id);
+        return Ok("Cliente desativado com sucesso.");
+    }
+
+    [HttpGet("ativos")]
+    public async Task<IActionResult> ObterAtivos()
+    {
+        var ativos = await _clienteService.ObterTodosAtivosAsync();
+        return Ok(ativos);
     }
 }
+
+public record ClienteInputModel(string Nome, string Email);

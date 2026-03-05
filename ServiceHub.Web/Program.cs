@@ -5,6 +5,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ServiceHub.Infrastructure.Data;
 using ServiceHub.Infrastructure.Identity;
+using ServiceHub.Core.Interfaces; // Adicionado
+using ServiceHub.Infrastructure.Services; // Adicionado
+using ServiceHub.Infrastructure.Repositories; // Adicionado
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +16,7 @@ var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 
 builder.Services.AddControllers();
 
+// Configuração Swagger (Mantida conforme seu código)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -49,6 +53,10 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+// 🔥 INJEÇÃO DE DEPENDÊNCIA (AQUI É O LUGAR CORRETO)
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -71,6 +79,7 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
+// Middlewares (Mantidos)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -79,19 +88,13 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
-
-// 🔥 Seed de Roles (uma única vez)
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider
-        .GetRequiredService<RoleManager<IdentityRole>>();
-
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await RoleSeeder.SeedRolesAsync(roleManager);
 }
 

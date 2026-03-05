@@ -29,6 +29,9 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register(string email, string password)
     {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            return BadRequest("Email e senha são obrigatórios.");
+
         var userExists = await _userManager.FindByEmailAsync(email);
         if (userExists != null)
             return BadRequest("Usuário já existe");
@@ -36,7 +39,8 @@ public class AuthController : ControllerBase
         var user = new IdentityUser
         {
             UserName = email,
-            Email = email
+            Email = email,
+            EmailConfirmed = true // Facilita o teste inicial
         };
 
         var result = await _userManager.CreateAsync(user, password);
@@ -52,6 +56,9 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(string email, string password)
     {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            return BadRequest("Email e senha são obrigatórios.");
+
         var user = await _userManager.FindByEmailAsync(email);
 
         if (user == null)
@@ -64,8 +71,11 @@ public class AuthController : ControllerBase
 
         var userRoles = await _userManager.GetRolesAsync(user);
 
+        // AJUSTE: Usando ClaimTypes padrão para o ASP.NET reconhecer as Roles
         var claims = new List<Claim>
         {
+            new Claim(ClaimTypes.Name, user.Email),
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(JwtRegisteredClaimNames.Sub, user.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
@@ -81,10 +91,14 @@ public class AuthController : ControllerBase
     }
 
     // ================= ADD ROLE =================
-    [Authorize(Roles = "Admin")]
+    // DICA: Para o primeiro teste, você pode comentar o [Authorize] se não tiver nenhum Admin criado
+    ///[Authorize(Roles = "Admin")]
     [HttpPost("add-role")]
     public async Task<IActionResult> AddRole(string email, string role)
     {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(role))
+            return BadRequest("Email e role são obrigatórios.");
+
         var user = await _userManager.FindByEmailAsync(email);
 
         if (user == null)
@@ -92,6 +106,11 @@ public class AuthController : ControllerBase
 
         if (!await _roleManager.RoleExistsAsync(role))
             return BadRequest("Role não existe");
+
+        var alreadyInRole = await _userManager.IsInRoleAsync(user, role);
+
+        if (alreadyInRole)
+            return BadRequest("Usuário já possui essa role");
 
         var result = await _userManager.AddToRoleAsync(user, role);
 
@@ -123,7 +142,7 @@ public class AuthController : ControllerBase
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
             claims: claims,
-            expires: DateTime.Now.AddMinutes(
+            expires: DateTime.UtcNow.AddMinutes(
                 Convert.ToDouble(jwtSettings["ExpiryMinutes"])),
             signingCredentials: creds);
 
