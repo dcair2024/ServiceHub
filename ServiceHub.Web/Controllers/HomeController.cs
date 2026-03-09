@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using ServiceHub.Web.Models;
+using System.Diagnostics;
 
 namespace ServiceHub.Web.Controllers;
 
