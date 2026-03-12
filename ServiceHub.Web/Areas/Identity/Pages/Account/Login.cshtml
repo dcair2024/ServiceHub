@@ -1,0 +1,57 @@
+﻿@page
+@model Microsoft.AspNetCore.Identity.UI.V5.Pages.Account.Internal.LoginModel
+@{
+    ViewData["Title"] = "Entrar";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-header text-white text-center py-4" style="background-color: #0d2137;">
+                    <h3 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2"></i>ServiceHub</h3>
+                </div>
+                <div class="card-body p-5">
+                    <h4 class="text-center mb-4">Aceder à conta</h4>
+
+                    <form id="account" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="nome@exemplo.com" />
+                            <label asp-for="Input.Email" class="form-label">E-mail</label>
+                            <span asp-validation-for="Input.Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="palavra-passe" />
+                            <label asp-for="Input.Password" class="form-label">Palavra-passe</label>
+                            <span asp-validation-for="Input.Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="checkbox mb-3">
+                            <label asp-for="Input.RememberMe" class="form-label">
+                                <input class="form-check-input" asp-for="Input.RememberMe" />
+                                Lembrar-me?
+                            </label>
+                        </div>
+
+                        <div>
+                            <button id="login-submit" type="submit" class="w-100 btn btn-lg text-white" style="background-color: #0d2137;">Entrar</button>
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <p>
+                                <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none text-primary">Não tem conta? Registe-se aqui</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
