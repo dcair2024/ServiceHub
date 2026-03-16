@@ -2,46 +2,113 @@
 using Microsoft.AspNetCore.Mvc;
 using ServiceHub.Core.Interfaces;
 
-[ApiController]
-[Route("api/[controller]")]
-[Authorize] // Exige Token JWT
-public class ClientesController : ControllerBase
+namespace ServiceHub.Web.Controllers
 {
-    private readonly IClienteService _service;
-
-    public ClientesController(IClienteService service) => _service = service;
-
-    [HttpPost]
-    public async Task<IActionResult> Criar([FromBody] ClienteRequest request)
+    [Authorize]
+    public class ClientesController : Controller
     {
-        try
-        {
-            var cliente = await _service.CriarClienteAsync(request.Nome, request.Email);
-            return Ok(cliente);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
+        private readonly IClienteService _service;
 
-    [HttpGet("ativos")]
-    public async Task<IActionResult> ListarAtivos() => Ok(await _service.ObterTodosAtivosAsync());
+        public ClientesController(IClienteService service)
+        {
+            _service = service;
+        }
 
-    [HttpPatch("{id}/desativar")]
-    [Authorize(Roles = "Admin")] // Apenas Admins desativam
-    public async Task<IActionResult> Desativar(int id)
-    {
-        try
+        // [FE-S1-05]: Listagem
+        [HttpGet]
+        public async Task<IActionResult> Index()
         {
-            await _service.DesativarClienteAsync(id);
-            return Ok("Cliente desativado.");
+            var clientes = await _service.ObterTodosAtivosAsync();
+            return View(clientes);
         }
-        catch (Exception ex)
+
+        // [FE-S1-06]: Cadastro (GET)
+        [HttpGet]
+        public IActionResult Create()
         {
-            return NotFound(ex.Message);
+            return View();
         }
+        
+
+
+        // [FE-S1-06]: Cadastro (POST)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ClienteRequest request)
+        {
+            if (!ModelState.IsValid) return View(request);
+
+            try
+            {
+                await _service.CriarClienteAsync(request.Nome, request.Email);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
+                return View(request);
+            }
+        }
+        /* TUDO ABAIXO SERÁ COMENTADO PARA PERMITIR A COMPILAÇÃO
+
+                // [FE-S1-06]: Cadastro (POST)
+                [HttpPost]
+                [ValidateAntiForgeryToken]
+                public async Task<IActionResult> Create(ClienteRequest request)
+                {
+                    if (!ModelState.IsValid) return View(request);
+                    try
+                    {
+                        await _service.CriarClienteAsync(request.Nome, request.Email);
+                        return RedirectToAction(nameof(Index));
+                    }
+                    catch (Exception ex)
+                    {
+                        ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
+                        return View(request);
+                    }
+                }
+
+                // [FE-S1-07]: Edição (GET)
+                [HttpGet]
+                public async Task<IActionResult> Edit(int id)
+                {
+                    var cliente = await _service.ObterPorIdAsync(id); // <--- O erro está aqui
+                    if (cliente == null) return NotFound();
+                    var request = new ClienteRequest(cliente.Nome, cliente.Email);
+                    return View(request);
+                }
+
+                // [FE-S1-07]: Edição (POST)
+                [HttpPost]
+                [ValidateAntiForgeryToken]
+                public async Task<IActionResult> Edit(int id, ClienteRequest request)
+                {
+                    if (!ModelState.IsValid) return View(request);
+                    try
+                    {
+                        await _service.AtualizarClienteAsync(id, request.Nome, request.Email); // <--- E aqui
+                        return RedirectToAction(nameof(Index));
+                    }
+                    catch (Exception ex)
+                    {
+                        ModelState.AddModelError("", "Erro ao atualizar: " + ex.Message);
+                        return View(request);
+                    }
+                }
+
+                // [FE-S1-08]: Detalhes
+                [HttpGet]
+                public async Task<IActionResult> Details(int id)
+                {
+                    var cliente = await _service.ObterPorIdAsync(id); // <--- E aqui
+                    if (cliente == null) return NotFound();
+                    return View(cliente);
+                }
+
+                FIM DO COMENTÁRIO */
     }
 }
 
-public record ClienteRequest(string Nome, string Email);
+    // Record para capturar os dados do formulário sem conflitar com a Entidade
+    public record ClienteRequest(string Nome, string Email);
