@@ -1,5 +1,4 @@
 ﻿@model ServiceHub.Web.Controllers.ClienteRequest
-@using ServiceHub.Web.Controllers
 
 @{
     ViewData["Title"] = "Editar Cliente";
@@ -7,14 +6,15 @@
 
 <div class="container mt-4">
     <div class="card shadow-sm border-warning">
-        <div class="card-header bg-warning text-dark">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
             <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Cliente</h4>
+            <span class="badge bg-dark">ID: @ViewContext.RouteData.Values["id"]</span>
         </div>
         <div class="card-body">
             <form asp-action="Edit" method="post">
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-                @* IMPORTANTE: O ID precisa estar aqui para o banco saber quem editar *@
+                @* Campo oculto para o ID *@
                 <input type="hidden" name="id" value="@ViewContext.RouteData.Values["id"]" />
 
                 <div class="mb-3">
@@ -30,20 +30,12 @@
                 </div>
 
                 <div class="d-flex justify-content-between">
-                    <a asp-action="Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Cancelar
-                    </a>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
                     <button type="submit" class="btn btn-warning fw-bold">
-                        <i class="bi bi-check-lg"></i> Atualizar Dados
+                        <i class="bi bi-save"></i> Salvar Alterações
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}

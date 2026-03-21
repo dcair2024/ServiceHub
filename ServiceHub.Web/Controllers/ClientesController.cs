@@ -2,113 +2,91 @@
 using Microsoft.AspNetCore.Mvc;
 using ServiceHub.Core.Interfaces;
 
-namespace ServiceHub.Web.Controllers
+namespace ServiceHub.Web.Controllers;
+
+[Authorize]
+public class ClientesController : Controller
 {
-    [Authorize]
-    public class ClientesController : Controller
+    private readonly IClienteService _service;
+
+    public ClientesController(IClienteService service)
     {
-        private readonly IClienteService _service;
+        _service = service;
+    }
 
-        public ClientesController(IClienteService service)
+    // [FE-S1-05]: Listagem
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        var clientes = await _service.ObterTodosAtivosAsync();
+        return View(clientes);
+    }
+
+    // [FE-S1-06]: Cadastro (GET)
+    [HttpGet]
+    public IActionResult Create()
+    {
+        return View();
+    }
+
+    // [FE-S1-06]: Cadastro (POST)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(ClienteRequest request)
+    {
+        if (!ModelState.IsValid) return View(request);
+
+        try
         {
-            _service = service;
+            await _service.CriarClienteAsync(request.Nome, request.Email);
+            return RedirectToAction(nameof(Index));
         }
-
-        // [FE-S1-05]: Listagem
-        [HttpGet]
-        public async Task<IActionResult> Index()
+        catch (Exception ex)
         {
-            var clientes = await _service.ObterTodosAtivosAsync();
-            return View(clientes);
+            ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
+            return View(request);
         }
+    }
 
-        // [FE-S1-06]: Cadastro (GET)
-        [HttpGet]
-        public IActionResult Create()
+    // [FE-S1-07]: Edição (GET)
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var cliente = await _service.ObterPorIdAsync(id);
+        if (cliente == null) return NotFound();
+
+        var request = new ClienteRequest(cliente.Nome, cliente.Email);
+        return View(request);
+    }
+
+    // [FE-S1-07]: Edição (POST)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, ClienteRequest request)
+    {
+        if (!ModelState.IsValid) return View(request);
+
+        try
         {
-            return View();
+            await _service.AtualizarClienteAsync(id, request.Nome, request.Email);
+            return RedirectToAction(nameof(Index));
         }
-        
-
-
-        // [FE-S1-06]: Cadastro (POST)
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ClienteRequest request)
+        catch (Exception ex)
         {
-            if (!ModelState.IsValid) return View(request);
-
-            try
-            {
-                await _service.CriarClienteAsync(request.Nome, request.Email);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
-                return View(request);
-            }
+            ModelState.AddModelError("", "Erro ao atualizar: " + ex.Message);
+            return View(request);
         }
-        /* TUDO ABAIXO SERÁ COMENTADO PARA PERMITIR A COMPILAÇÃO
+    }
 
-                // [FE-S1-06]: Cadastro (POST)
-                [HttpPost]
-                [ValidateAntiForgeryToken]
-                public async Task<IActionResult> Create(ClienteRequest request)
-                {
-                    if (!ModelState.IsValid) return View(request);
-                    try
-                    {
-                        await _service.CriarClienteAsync(request.Nome, request.Email);
-                        return RedirectToAction(nameof(Index));
-                    }
-                    catch (Exception ex)
-                    {
-                        ModelState.AddModelError("", "Erro ao salvar: " + ex.Message);
-                        return View(request);
-                    }
-                }
-
-                // [FE-S1-07]: Edição (GET)
-                [HttpGet]
-                public async Task<IActionResult> Edit(int id)
-                {
-                    var cliente = await _service.ObterPorIdAsync(id); // <--- O erro está aqui
-                    if (cliente == null) return NotFound();
-                    var request = new ClienteRequest(cliente.Nome, cliente.Email);
-                    return View(request);
-                }
-
-                // [FE-S1-07]: Edição (POST)
-                [HttpPost]
-                [ValidateAntiForgeryToken]
-                public async Task<IActionResult> Edit(int id, ClienteRequest request)
-                {
-                    if (!ModelState.IsValid) return View(request);
-                    try
-                    {
-                        await _service.AtualizarClienteAsync(id, request.Nome, request.Email); // <--- E aqui
-                        return RedirectToAction(nameof(Index));
-                    }
-                    catch (Exception ex)
-                    {
-                        ModelState.AddModelError("", "Erro ao atualizar: " + ex.Message);
-                        return View(request);
-                    }
-                }
-
-                // [FE-S1-08]: Detalhes
-                [HttpGet]
-                public async Task<IActionResult> Details(int id)
-                {
-                    var cliente = await _service.ObterPorIdAsync(id); // <--- E aqui
-                    if (cliente == null) return NotFound();
-                    return View(cliente);
-                }
-
-                FIM DO COMENTÁRIO */
+    // [FE-S1-08]: Detalhes
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var cliente = await _service.ObterPorIdAsync(id);
+        if (cliente == null) return NotFound();
+        return View(cliente);
     }
 }
 
-    // Record para capturar os dados do formulário sem conflitar com a Entidade
-    public record ClienteRequest(string Nome, string Email);
+// Record movido para dentro do namespace, logo abaixo da classe
+public record ClienteRequest(string Nome, string Email);

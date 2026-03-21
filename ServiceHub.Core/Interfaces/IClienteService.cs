@@ -1,6 +1,8 @@
-﻿using ServiceHub.Core.Entities;
+﻿namespace ServiceHub.Core.Interfaces;
 
-namespace ServiceHub.Core.Interfaces;
+using ServiceHub.Core.Entities;
+
+
 
 public interface IClienteService
 {
@@ -8,4 +10,8 @@ public interface IClienteService
     Task DesativarClienteAsync(int id);
     Task AtivarClienteAsync(int id);
     Task<IEnumerable<Cliente>> ObterTodosAtivosAsync();
+
+    // ADICIONE ESTES DOIS PARA A TAREFA [FE-S1-07]
+    Task<Cliente?> ObterPorIdAsync(int id);
+    Task AtualizarClienteAsync(int id, string nome, string email);
 }
